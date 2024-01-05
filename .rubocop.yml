@@ -1,2 +1,4 @@
 FrozenStringLiteralComment:
   Enabled: true
+Metrics/MethodLength:
+  Max: 155

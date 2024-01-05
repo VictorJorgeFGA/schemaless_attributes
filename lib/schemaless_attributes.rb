@@ -2,7 +2,7 @@
 
 require 'schemaless_attributes/engine'
 
-# This module holds all the logic of schemaless attributes
+# Module that loads all the logic of schemaless attributes
 module SchemalessAttributes
-  # Your code goes here...
+  autoload :Support, 'schemaless_attributes/support'
 end

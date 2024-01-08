@@ -11,11 +11,9 @@ module SchemalessAttributes
   module Support
     extend ActiveSupport::Concern
 
-    @registered_schemaless_attributes = []
-
     class_methods do
       def registered_schemaless_attributes
-        @registered_schemaless_attributes.dup
+        @registered_schemaless_attributes ||= []
       end
 
       def json_attribute(name, type:, source: nil)
@@ -26,11 +24,11 @@ module SchemalessAttributes
         check_and_register_attribute!(name, type, source, expected_source_type: Hash)
 
         define_method name do
-          SchemalessAttributes::Type.handler(type).deserialize(source[name])
+          SchemalessAttributes::Type.handler(type).deserialize(send(source)[name])
         end
 
         define_method "#{name}=" do |value|
-          source[name] = SchemalessAttributes::Type.handler(type).cast(value)
+          send(source)[name] = SchemalessAttributes::Type.handler(type).cast(value)
         end
       end
 
@@ -58,7 +56,7 @@ module SchemalessAttributes
 
       def check_and_register_attribute!(name, type, source, expected_source_type:)
         check_if_attribute_name_is_ambiguos!(name)
-        check_if_source_exists_and_has_correct_type!(name, source, expected_type: expected_source_type)
+        # check_if_source_exists_and_has_correct_type!(name, source, expected_type: expected_source_type)
         check_if_attribute_type_is_valid!(name, type)
         register_attribute(name)
       end
@@ -87,7 +85,7 @@ module SchemalessAttributes
       end
 
       def register_attribute(attribute_name)
-        @registered_schemaless_attributes << attribute_name.to_s
+        registered_schemaless_attributes << attribute_name.to_s
       end
     end
 

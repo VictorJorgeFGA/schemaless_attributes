@@ -16,26 +16,25 @@ module SchemalessAttributes
         @registered_schemaless_attributes ||= []
       end
 
-      def json_attribute(name, type:, source: nil)
-        source = default_json_attributes_source if source.nil?
+      def json_attribute(name, type:)
         type = type.to_sym
         name = name.to_s
 
-        check_and_register_attribute!(name, type, source, expected_source_type: Hash)
+        check_and_register_attribute(name, type)
 
         define_method name do
-          SchemalessAttributes::Type.handler(type).deserialize(send(source)[name])
+          SchemalessAttributes::Type.handler(type).deserialize(json_attributes_source[name])
         end
 
         define_method "#{name}=" do |value|
-          send(source)[name] = SchemalessAttributes::Type.handler(type).cast(value)
+          json_attributes_source[name] = SchemalessAttributes::Type.handler(type).cast(value)
         end
       end
 
       def attachment_attribute(name, source:, fallback_write: proc { false }, fallback_read: proc { false })
         name = name.to_s
 
-        check_and_register_attribute!(name, :text, source, expected_source_type: ActiveStorage::Attached)
+        check_and_register_attribute(name, :text)
 
         define_method name do
           return super if fallback_read.call(self)
@@ -54,31 +53,19 @@ module SchemalessAttributes
         end
       end
 
-      def check_and_register_attribute!(name, type, source, expected_source_type:)
-        check_if_attribute_name_is_ambiguos!(name)
-        # check_if_source_exists_and_has_correct_type!(name, source, expected_type: expected_source_type)
-        check_if_attribute_type_is_valid!(name, type)
+      def check_and_register_attribute(name, type)
+        check_if_attribute_name_is_ambiguos(name)
+        check_if_attribute_type_is_valid(name, type)
         register_attribute(name)
       end
 
-      def check_if_attribute_name_is_ambiguos!(attribute_name)
+      def check_if_attribute_name_is_ambiguos(attribute_name)
         if instance_methods.include?(attribute_name.to_sym) || instance_methods.include?("#{attribute_name}=".to_sym)
           raise "Declaration of schemaless attribute with ambiguous name \"#{attribute_name}\" on #{self.class}!"
         end
       end
 
-      def check_if_source_exists_and_has_correct_type!(attribute_name, source, expected_type:)
-        unless instance_methods.include?(source)
-          raise "The provided source \"#{source}\" for schemaless attribute \"#{attribute_name}\" is not defined!"
-        end
-
-        return if send(source).is_a?(expected_type)
-
-        raise "The provided source \"#{source}\" for schemaless attribute \"#{attribute_name}\" is a " \
-              "#{send(source).class}, it was expected to be a #{expected_type}!"
-      end
-
-      def check_if_attribute_type_is_valid!(attribute_name, type)
+      def check_if_attribute_type_is_valid(attribute_name, type)
         return if SchemalessAttributes::Type.type_available?(type)
 
         raise "Schemaless attribute \"#{attribute_name}\" has unsupported type: #{type}!"

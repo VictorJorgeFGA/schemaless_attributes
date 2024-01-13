@@ -1,6 +1,7 @@
 AllCops:
   Exclude:
     - 'test/dummy/db/schema.rb'
+    - 'vendor/bundle/**/*'
 
 FrozenStringLiteralComment:
   Enabled: true
